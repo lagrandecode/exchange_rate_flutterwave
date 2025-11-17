@@ -41,6 +41,23 @@ class RatesView(APIView):
                 source_currency=source_currency,
                 destination_currency=destination_currency
             )
+            # Ensure data is fresh; if stale, fetch a new quote from Flutterwave
+            is_stale = timezone.now() - db_rate.updated_at > timedelta(minutes=10)
+            if is_stale:
+                try:
+                    fw_resp = fetch_flutterwave_rate(source_currency, destination_currency)
+                    if fw_resp.get('status') == 'success':
+                        save_rate_to_db(source_currency, destination_currency, fw_resp)
+                        shaped = to_backend_shape(fw_resp)
+                        set_rate(source_currency, destination_currency, shaped)
+                        return Response(shaped, status=status.HTTP_200_OK)
+                except Exception as e:
+                    logger.warning(
+                        "Failed to refresh stale rate %s->%s: %s. Falling back to cached DB value.",
+                        source_currency,
+                        destination_currency,
+                        e,
+                    )
             # Convert DB model to Flutterwave response shape
             shaped = {
                 "status": "success",
