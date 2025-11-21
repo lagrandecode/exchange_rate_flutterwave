@@ -1,0 +1,25 @@
+HOW TO CONVERT HTML TO PDF ON macOS
+====================================
+
+Method 1: Using Safari (Easiest)
+---------------------------------
+1. Open the file: DJANGO_BACKEND_DOCUMENTATION.html
+2. Press Command + P (or File > Print)
+3. In the print dialog, click "PDF" button at the bottom
+4. Select "Save as PDF"
+5. Save as: DJANGO_BACKEND_DOCUMENTATION.pdf
+
+Method 2: Using Chrome
+-----------------------
+1. Open the file: DJANGO_BACKEND_DOCUMENTATION.html in Chrome
+2. Press Command + P (or File > Print)
+3. Click "Save as PDF" as the destination
+4. Click "Save"
+
+Method 3: Using Command Line (if you have Chrome installed)
+------------------------------------------------------------
+Run this command in terminal:
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --headless --disable-gpu --print-to-pdf="$(pwd)/DJANGO_BACKEND_DOCUMENTATION.pdf" "$(pwd)/DJANGO_BACKEND_DOCUMENTATION.html"
+
+The PDF file will be created in the same directory.
+
