@@ -42,7 +42,7 @@ class RatesView(APIView):
                 destination_currency=destination_currency
             )
             # Ensure data is fresh; if stale, fetch a new quote from Flutterwave
-            is_stale = timezone.now() - db_rate.updated_at > timedelta(minutes=10)
+            is_stale = timezone.now() - db_rate.last_updated > timedelta(minutes=10)
             if is_stale:
                 try:
                     fw_resp = fetch_flutterwave_rate(source_currency, destination_currency)
@@ -174,6 +174,55 @@ class AllRatesView(APIView):
             "status": "success",
             "message": "Rates fetched",
             "data": results
+        }, status=status.HTTP_200_OK)
+
+
+class RateChangeCheckView(APIView):
+    """
+    GET /api/rates/check-changes/
+    Checks if exchange rates have been updated in the last 5 days.
+    Returns information about which rates have changed and when.
+    """
+
+    def get(self, request):
+        # Calculate the date 5 days ago
+        five_days_ago = timezone.now() - timedelta(days=5)
+        
+        # Find all rates that have been updated in the last 5 days
+        updated_rates = ExchangeRate.objects.filter(
+            last_updated__gte=five_days_ago
+        ).order_by('-last_updated')
+        
+        # Count total rates and updated rates
+        total_rates = ExchangeRate.objects.count()
+        updated_count = updated_rates.count()
+        
+        # Prepare response data
+        changed_rates = []
+        for rate in updated_rates:
+            changed_rates.append({
+                "source_currency": rate.source_currency,
+                "destination_currency": rate.destination_currency,
+                "rate": float(rate.rate),
+                "last_updated": rate.last_updated.isoformat(),
+                "days_since_update": (timezone.now() - rate.last_updated).days,
+                "hours_since_update": round((timezone.now() - rate.last_updated).total_seconds() / 3600, 2)
+            })
+        
+        # Check if any rates have changed
+        has_changes = updated_count > 0
+        
+        return Response({
+            "status": "success",
+            "message": "Rate change check completed",
+            "data": {
+                "has_changes": has_changes,
+                "total_rates": total_rates,
+                "updated_in_last_5_days": updated_count,
+                "check_period_days": 5,
+                "check_date": five_days_ago.isoformat(),
+                "changed_rates": changed_rates
+            }
         }, status=status.HTTP_200_OK)
 
 
